@@ -11,7 +11,7 @@ def version():
     Increment the build in the version.
     """
     from json import load
-    _version = '1.1'
+    _version = '2.0'
     from rezbuild import earlybind
     return earlybind.version(this, _version)
 

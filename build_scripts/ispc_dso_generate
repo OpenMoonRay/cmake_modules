@@ -172,6 +172,40 @@ def declareAttribute(data, attr, ns, dataKeywords, aliases, name=''):
                      (ns, attr, metaKey, metaStr))
     return text
 
+def declareOutputAttribute(data, attr, ns):
+    type = data['type']
+    if type == "Bool":
+        enumType = "TYPE_BOOL"
+    elif type == "Int":
+        enumType = "TYPE_INT"
+    elif type == "String":
+        enumType = "TYPE_STRING"
+    # Float, Vec2f, and Vec3f won't really happen since they get mapped to RGB
+    # but putting this here in case we ever stop doing that remapping
+    elif type == "Float":
+        enumType = "TYPE_FLOAT"
+    elif type == "Vec2f":
+        enumType = "TYPE_VEC2F"
+    elif type == "Vec3f":
+        enumType = "TYPE_VEC3F"
+    elif type == "Vec4f":
+        enumType = "TYPE_VEC4F"
+    elif type == "Rgb":
+        enumType = "TYPE_RGB"
+    elif type == "Rgba":
+        enumType = "TYPE_RGBA"
+    elif type == "Mat3f":
+        enumType = "TYPE_MAT3F"
+    elif type == "Mat4f":
+        enumType = "TYPE_MAT4F"
+    elif type == "SceneObject*":
+        enumType = "TYPE_SCENE_OBJECT"
+    else:
+        raise ValueError(f"Unknown output attribute type: {type}")
+    text = ('sceneClass.setOutputType(%s);\n' % (enumType))
+
+    return text
+
 def gen_attributes_cc(shader,ns):
     # generate "attributes.cc" output file
 
@@ -210,6 +244,9 @@ def gen_attributes_cc(shader,ns):
             continue;
         else:
             text += declareAttribute(data, attr, ns, dataKeywords, aliases)
+    if shader.get('outputAttributes'):
+        for attr, data in shader['outputAttributes'].items():
+            text += declareOutputAttribute(data, attr, ns)
 
     if 'labels' in shader:
         text += 'static const char *labels[] = {\n'
@@ -255,8 +292,14 @@ def IspcKeyType(rdl2Type):
         dataType += 'Float2AttrKeyISPC'
     elif rdl2Type == 'Vec3f' or rdl2Type == 'Rgb':
         dataType += 'Float3AttrKeyISPC'
-    elif rdl2Type == 'Vec4f' or rdl2Type == 'Rgba':
+    elif rdl2Type == 'Vec4f' or rdl2Type == 'Rgba' or rdl2Type  == 'Color4':
         dataType += 'Float4AttrKeyISPC'
+    elif rdl2Type == 'Mat3f':
+        dataType += 'Mat3fAttrKeyISPC'
+    elif rdl2Type == 'Mat4f':
+        dataType += 'Mat4fAttrKeyISPC'
+    elif rdl2Type == 'SceneObject*':
+        dataType += 'SceneObjectAttrKeyISPC'
     else:
         dataType += 'UNKNOWN_ATTR_TYPE'
     return dataType
@@ -277,17 +320,31 @@ def IspcType(rdl2Type):
         shaderType += 'Vec2f'
     elif rdl2Type == 'Vec3f':
         shaderType += 'Vec3f'
+    elif rdl2Type == 'Vec4f':
+        shaderType += 'Vec4f'
     elif rdl2Type == 'Rgb':
         shaderType = 'Color'
+    elif rdl2Type == 'Rgba' or rdl2Type == 'Color4':
+        shaderType = 'Col4f'
+    elif rdl2Type == 'Mat3f':
+        shaderType = 'Mat3f'
+    elif rdl2Type == 'Mat4f':
+        shaderType = 'Mat4f'
+    elif rdl2Type == 'SceneObject*':
+        shaderType = 'SceneObject*'
     return shaderType
 
 def cap(name):
     return name[0].upper() + name[1:]
 
 def getAttrFn(name):
+    if name == "SceneObject*":
+        return "getSceneObject"
     return 'get' + cap(name)
 
 def evalAttrFn(name):
+    if name == "SceneObject*":
+        return "evalSceneObject"
     return 'eval' + cap(name)
 
 def evalAttrBoundFn(name):
@@ -309,7 +366,12 @@ def evalNormalUnBoundFn(name):
     return 'evalNormal' + cap(name) + 'UnBound'
 
 def defineGetAttrFn(shaderType, retType, attrName):
-    text = ('inline uniform ' + retType +
+    # when it's SceneObject there needs to be a "uniform" on the pointer
+    if retType == "SceneObject*":
+        extraUniform = 'uniform '
+    else:
+        extraUniform = ""
+    text = ('inline uniform ' + retType + ' ' + extraUniform +
             '\n' + getAttrFn(attrName) +
             '(const uniform ' + shaderType + ' * uniform obj) {\n' +
             '    return ' + getAttrFn(retType) + '(obj, ' + attrName + ');\n}\n')
@@ -317,8 +379,12 @@ def defineGetAttrFn(shaderType, retType, attrName):
 
 def defineEvalAttrFn(shaderType, retType, attrName):
     # evalAttrName(obj, tls, state);
-    text = ('inline varying ' + retType +
-            '\n' + evalAttrFn(attrName) +
+    # when it's SceneObject there needs to be a "varying" on the pointer
+    if retType == "SceneObject*":
+        text = 'inline uniform ' + retType + ' varying\n'
+    else:
+        text = 'inline varying ' + retType + '\n' 
+    text += (evalAttrFn(attrName) +
             '(const uniform ' + shaderType + ' * uniform obj, ' +
             'uniform ShadingTLState *uniform tls, ' +
             'const varying State &state) {\n' +
@@ -372,7 +438,17 @@ def declareISPCAttributeFunctions(data, attr, shader):
         ispcType = IspcType(data['type'])
         shaderType = shader['type']
         needsEval = False
-        if ispcType == 'Color' or ispcType == 'float' or ispcType == 'Vec2f' or ispcType == 'Vec3f':
+        if (ispcType == 'bool' or
+            ispcType == 'int' or
+            ispcType == 'float' or
+            ispcType == 'Vec2f' or
+            ispcType == 'Vec3f' or
+            ispcType == 'Vec4f' or
+            ispcType == 'Color' or
+            ispcType == 'Col4f' or
+            ispcType == 'Mat3f' or
+            ispcType == 'Mat4f' or
+            ispcType == 'SceneObject*'):
             if 'flags' in data and 'FLAGS_BINDABLE' in data['flags']:
                 needsEval = True
         text += defineGetAttrFn(shaderType, ispcType, attr)
