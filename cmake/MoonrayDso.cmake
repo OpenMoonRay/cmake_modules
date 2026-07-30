@@ -341,7 +341,10 @@ function(moonray_dso_simple targetName)
         endif()
     endif()
 
-    add_dependencies(all_moonray_dsos ${targetName})
+    add_dependencies(all_moonray_dsos ${targetName} ${targetName}_proxy)
+    if (TARGET coredata_${targetName})
+        add_dependencies(all_moonray_dsos coredata_${targetName})
+    endif()
 endfunction()
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/openmoonray/cmake_modules/build_scripts/ispc_dso_generate)
