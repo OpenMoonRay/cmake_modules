@@ -70,7 +70,7 @@ if(IsDarwinPlatform)
     set(CMAKE_OSX_ARCHITECTURES arm64)
 
     # scene_rdl2's Platform.h defines __SSE3__/_SSE4_2__ etc on aarch64 to
-    # drive sse2neon emulation, which makes OIIO's headers include x86 instrinsics headers
+    # drive sse2neon emulation, which makes OIIO's headers include x86 instrinsics headers.
     # Manually disable these headers here, instead of having to add this in every file that includes OIIO.
     list(APPEND GLOBAL_COMPILE_DEFINITIONS
         __IMMINTRIN_H=
