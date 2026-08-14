@@ -68,6 +68,18 @@ if(IsDarwinPlatform)
     set(GLOBAL_ISPC_FLAGS -D__aarch64__ -D__APPLE__ -D__ARM_NEON__)
     set(GLOBAL_ISPC_INSTRUCTION_SETS neon-i32x4)
     set(CMAKE_OSX_ARCHITECTURES arm64)
+
+    # scene_rdl2's Platform.h defines __SSE3__/__SSE4_2__ etc on aarch64 to
+    # drive sse2neon emulation, which makes OIIO's headers include x86 intrinsics headers.
+    # Manually disable these headers here, instead of having to add this in every file that includes OIIO.
+    list(APPEND GLOBAL_COMPILE_DEFINITIONS
+        __IMMINTRIN_H=
+        __NMMINTRIN_H=
+        OIIO_NO_SSE=1
+        OIIO_NO_AVX=1
+        OIIO_NO_AVX2=1
+    )
+
 else() # Linux/Windows
     set(GLOBAL_CPP_FLAGS __AVX__)
     set(GLOBAL_LINK_FLAGS "-Wl,--enable-new-dtags")
