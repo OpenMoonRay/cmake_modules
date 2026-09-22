@@ -96,5 +96,6 @@ elseif(IsDarwinPlatform)
     option(MOONRAY_USE_METAL "Whether to enable XPU mode and OIDN Metal denoising" YES)
 endif()
 
-
-
+if(CMAKE_CXX_COMPILER_LOADED)
+    include(OMR_Atomic)
+endif()

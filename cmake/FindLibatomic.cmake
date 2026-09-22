@@ -2,8 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 find_library(Libatomic_LIBRARY
-  NAMES libatomic.so.1
-  HINTS $ENV{LIBATOMIC_ROOT}/lib /lib64)
+  NAMES atomic libatomic.so.1
+  HINTS
+    $ENV{LIBATOMIC_ROOT}/lib
+    $ENV{LIBATOMIC_ROOT}/lib64
+    ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES}
+  PATHS
+    /lib
+    /lib64
+    /usr/lib
+    /usr/lib64)
 
 mark_as_advanced(Libatomic_LIBRARY)
 

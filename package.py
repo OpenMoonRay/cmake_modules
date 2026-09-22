@@ -23,7 +23,7 @@ authors = [
     'Ron.Woods@dreamworks.com'
 ]
 
-requires = ['cmake-3.23']
+requires = ['cmake-3.24+<4']
 
 build_command = ("[ {install} ] && "
                  "rsync -tavz --exclude '.git*' --exclude 'build' --exclude 'package.py' {root}/ `printenv REZ_BUILD_INSTALL_PATH` || "

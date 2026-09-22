@@ -35,11 +35,18 @@ find_package_handle_standard_args(OpenVDB
   REQUIRED_VARS OpenVDB_LIBRARIES OpenVDB_INCLUDE_DIRS
 )
 
-if (OpenVDB_FOUND AND NOT TARGET OpenVDB::OpenVDB)
-    add_library(OpenVDB::OpenVDB UNKNOWN IMPORTED)
-    set_target_properties(OpenVDB::OpenVDB PROPERTIES
-      IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"
-      IMPORTED_LOCATION "${OpenVDB_LIBRARIES}"
-      INTERFACE_INCLUDE_DIRECTORIES "${OpenVDB_INCLUDE_DIRS}")
-endif()
+if(OpenVDB_FOUND)
+    if(NOT TARGET OpenVDB::OpenVDB AND NOT TARGET OpenVDB::openvdb)
+        add_library(OpenVDB::OpenVDB UNKNOWN IMPORTED)
+        set_target_properties(OpenVDB::OpenVDB PROPERTIES
+            IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"
+            IMPORTED_LOCATION "${OpenVDB_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${OpenVDB_INCLUDE_DIRS}")
+    endif()
 
+    if(TARGET OpenVDB::OpenVDB AND NOT TARGET OpenVDB::openvdb)
+        add_library(OpenVDB::openvdb ALIAS OpenVDB::OpenVDB)
+    elseif(TARGET OpenVDB::openvdb AND NOT TARGET OpenVDB::OpenVDB)
+        add_library(OpenVDB::OpenVDB ALIAS OpenVDB::openvdb)
+    endif()
+endif()
