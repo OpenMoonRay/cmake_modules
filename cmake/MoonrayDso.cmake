@@ -3,6 +3,10 @@
 
 include(OMR_Platform)
 
+if (NOT TARGET all_moonray_dsos)
+    add_custom_target(all_moonray_dsos)
+endif()
+
 function(Moonray_dso_cxx_compile_options target)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(${target}
@@ -336,6 +340,11 @@ function(moonray_dso_simple targetName)
                 )
         endif()
     endif()
+
+    add_dependencies(all_moonray_dsos ${targetName} ${targetName}_proxy)
+    if (TARGET coredata_${targetName})
+        add_dependencies(all_moonray_dsos coredata_${targetName})
+    endif()
 endfunction()
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/openmoonray/cmake_modules/build_scripts/ispc_dso_generate)
@@ -536,5 +545,7 @@ function(moonray_ispc_dso name)
             )
         endif()
     endif()
+
+    add_dependencies(all_moonray_dsos ${name})
 endfunction()
 

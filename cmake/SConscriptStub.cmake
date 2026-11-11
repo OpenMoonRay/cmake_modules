@@ -69,7 +69,11 @@ if(GLD STREQUAL "$ENV{STUDIO}")
         endif()
 
         get_target_property(srcs ${name} SOURCES)
-        if(srcs STREQUAL srcs-NOTFOUND)
+        # CMake versions differ on whether an INTERFACE library declared with
+        # no real sources (e.g. add_library(name INTERFACE "")) reports
+        # SOURCES as NOTFOUND or as a defined-but-empty value, so treat both
+        # as "no sources" rather than only checking for the NOTFOUND literal.
+        if(srcs STREQUAL "" OR srcs STREQUAL srcs-NOTFOUND)
             set(SConscript_LIBS)
         else()
             set(SConscript_LIBS
